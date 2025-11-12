@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type Decision = "approve" | "reject" | "needs more info";
+type Decision = "approve" | "reject" | "needs_more_info";
 
 interface Finding {
   label: string;
@@ -42,19 +42,48 @@ const Index = () => {
     try {
       const webhookUrl = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
       
+      console.log("Sending webhook request with payload:", { code: input });
+      
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({ code: input }),
       });
 
+      console.log("Webhook response status:", response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error("Analysis failed");
+        const errorText = await response.text();
+        console.error("Webhook error response:", errorText);
+        throw new Error(`Webhook request failed with status ${response.status}: ${response.statusText}`);
       }
 
-      const data: AnalysisResult = await response.json();
+      // Parse response text separately for better error handling
+      const responseText = await response.text();
+      console.log("Raw webhook response:", responseText);
+
+      let data: AnalysisResult;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", parseError);
+        throw new Error("Invalid JSON response from webhook");
+      }
+
+      // Validate response structure
+      if (!data.decision || !data.summary || !data.findings) {
+        console.error("Invalid response structure:", data);
+        throw new Error("Response missing required fields (decision, summary, or findings)");
+      }
+
+      // Normalize decision field format: handle both "needs_more_info" and "needs more info"
+      if ((data.decision as string) === "needs more info") {
+        data.decision = "needs_more_info";
+      }
+
+      console.log("Parsed and validated response:", data);
       setResult(data);
       
       toast({
@@ -62,12 +91,14 @@ const Index = () => {
         description: "Results are ready",
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("Analysis error:", error);
+      
       toast({
         title: "Error",
-        description: "Failed to analyze the input. Please try again.",
+        description: `Failed to analyze the input: ${errorMessage}`,
         variant: "destructive",
       });
-      console.error("Analysis error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +110,7 @@ const Index = () => {
         return "success";
       case "reject":
         return "destructive";
-      case "needs more info":
+      case "needs_more_info":
         return "warning";
       default:
         return "secondary";
