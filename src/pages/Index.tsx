@@ -40,17 +40,19 @@ const Index = () => {
     setResult(null);
 
     try {
-      const webhookUrl = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
+      console.log("Sending request to edge function with payload:", { code: input });
       
-      console.log("Sending webhook request with payload:", { code: input });
-      
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code: input }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-code`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ code: input }),
+        }
+      );
 
       console.log("Webhook response status:", response.status, response.statusText);
 
