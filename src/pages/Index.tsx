@@ -43,12 +43,11 @@ const Index = () => {
       console.log("Sending request to edge function with payload:", { code: input });
       
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-code`,
+        'https://corsproxy.io/?' + encodeURIComponent('https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy'),
         {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ code: input }),
         }
