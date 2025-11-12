@@ -40,8 +40,7 @@ const Index = () => {
     setResult(null);
 
     try {
-      // TODO: Replace this URL with your actual Relay.app webhook URL
-      const webhookUrl = "YOUR_RELAY_WEBHOOK_URL_HERE";
+      const webhookUrl = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
       
       const response = await fetch(webhookUrl, {
         method: "POST",
