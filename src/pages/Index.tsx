@@ -21,6 +21,7 @@ interface AnalysisResult {
 }
 
 const Index = () => {
+  // Deployment trigger - using AllOrigins CORS proxy
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
