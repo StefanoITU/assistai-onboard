@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Decision = "approve" | "reject" | "needs_more_info";
 
@@ -21,7 +22,6 @@ interface AnalysisResult {
 }
 
 const Index = () => {
-  // Deployment trigger - using AllOrigins CORS proxy
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -43,36 +43,16 @@ const Index = () => {
     try {
       console.log("Sending request to edge function with payload:", { code: input });
       
-      const response = await fetch(
-        'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy'),
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code: input }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('analyze-code', {
+        body: { code: input }
+      });
 
-      console.log("Webhook response status:", response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Webhook error response:", errorText);
-        throw new Error(`Webhook request failed with status ${response.status}: ${response.statusText}`);
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || 'Failed to analyze code');
       }
 
-      // Parse response text separately for better error handling
-      const responseText = await response.text();
-      console.log("Raw webhook response:", responseText);
-
-      let data: AnalysisResult;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse JSON response:", parseError);
-        throw new Error("Invalid JSON response from webhook");
-      }
+      console.log("Edge function response:", data);
 
       // Validate response structure
       if (!data.decision || !data.summary || !data.findings) {
