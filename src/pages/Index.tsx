@@ -21,7 +21,6 @@ interface AnalysisResult {
 }
 
 const Index = () => {
-  // Deployment trigger - using AllOrigins CORS proxy
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -44,7 +43,7 @@ const Index = () => {
       console.log("Sending request to edge function with payload:", { code: input });
       
       const response = await fetch(
-        'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy'),
+        'https://ssakwwcznknifhbanmxm.supabase.co/functions/v1/analyze-code',
         {
           method: 'POST',
           headers: {
