@@ -43,7 +43,7 @@ const Index = () => {
       console.log("Sending request to edge function with payload:", { code: input });
       
       const response = await fetch(
-        'https://corsproxy.io/?' + encodeURIComponent('https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy'),
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy'),
         {
           method: 'POST',
           headers: {
