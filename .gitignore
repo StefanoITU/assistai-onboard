@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+
+# Supabase
+supabase/config.toml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
