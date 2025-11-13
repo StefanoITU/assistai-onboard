@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.220.0/http/server.ts";
 
-const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
+const MAKE_WEBHOOK_URL = Deno.env.get('MAKE_WEBHOOK_URL');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +25,17 @@ serve(async (req) => {
         JSON.stringify({ error: 'Code parameter is required' }), 
         { 
           status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (!MAKE_WEBHOOK_URL) {
+      console.error('MAKE_WEBHOOK_URL environment variable is not set');
+      return new Response(
+        JSON.stringify({ error: 'Webhook configuration error' }), 
+        { 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
