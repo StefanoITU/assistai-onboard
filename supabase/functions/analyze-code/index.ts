@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
+const MAKE_WEBHOOK_URL = Deno.env.get('MAKE_WEBHOOK_URL');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +30,18 @@ serve(async (req) => {
       );
     }
 
-    console.log('Forwarding request to Make.com webhook:', MAKE_WEBHOOK_URL);
+    if (!MAKE_WEBHOOK_URL) {
+      console.error('MAKE_WEBHOOK_URL environment variable is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook URL is not configured' }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('Forwarding request to Make.com webhook');
     
     const response = await fetch(MAKE_WEBHOOK_URL, {
       method: 'POST',
