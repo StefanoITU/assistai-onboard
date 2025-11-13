@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.220.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
 
