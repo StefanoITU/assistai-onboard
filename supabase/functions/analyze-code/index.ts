@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.220.0/http/server.ts";
 
-const MAKE_WEBHOOK_URL = "https://hook.eu2.make.com/f422wve1j8iupogiji7kc2pf8xow92cy";
+const MAKE_WEBHOOK_URL = Deno.env.get('MAKE_WEBHOOK_URL');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,15 +17,53 @@ serve(async (req) => {
     console.log('Received request to analyze-code edge function');
     
     const { code } = await req.json();
-    console.log('Payload received:', { code: code?.substring(0, 100) + '...' });
+    console.log('Payload received:', { code: typeof code === 'string' ? code.substring(0, 100) + '...' : '[non-string code]' });
 
-    if (!code) {
-      console.error('No code provided in request');
+    // Rate limiting: allow max 10 requests per IP per 60 seconds
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!globalThis.__rateLimitMap) {
+      globalThis.__rateLimitMap = new Map();
+    }
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 60 seconds
+    const maxRequests = 10;
+    const rlMap = globalThis.__rateLimitMap;
+    let entry = rlMap.get(ip);
+    if (!entry || now - entry.start > windowMs) {
+      entry = { count: 1, start: now };
+    } else {
+      entry.count += 1;
+    }
+    rlMap.set(ip, entry);
+    if (entry.count > maxRequests) {
+      console.error('Rate limit exceeded for IP:', ip);
       return new Response(
-        JSON.stringify({ error: 'Code parameter is required' }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Input validation for code
+    if (!code || typeof code !== 'string') {
+      console.error('Invalid code parameter: must be a non-empty string');
+      return new Response(
+        JSON.stringify({ error: 'Code must be a non-empty string' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    if (code.length > 100000) {
+      console.error('Code exceeds maximum length of 100KB');
+      return new Response(
+        JSON.stringify({ error: 'Code exceeds maximum length of 100KB' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
@@ -45,7 +83,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Make.com webhook error:', errorText);
-      throw new Error(`Webhook request failed with status ${response.status}`);
+      throw new Error('Failed to process code analysis request');
     }
 
     const responseText = await response.text();
