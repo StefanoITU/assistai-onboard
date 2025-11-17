@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Decision = "approve" | "reject" | "needs_more_info";
 
@@ -40,38 +41,24 @@ const Index = () => {
     setResult(null);
 
     try {
-      console.log("Sending request to edge function with payload:", { code: input });
-      
-      const response = await fetch(
-        'https://ssakwwcznknifhbanmxm.supabase.co/functions/v1/analyze-code',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code: input }),
-        }
-      );
+console.log("Sending request to edge function with payload:", { code: input });
 
-      console.log("Edge function response status:", response.status, response.statusText);
+// Call the backend function via the Supabase client so auth headers are set automatically
+const { data: invokeData, error } = await supabase.functions.invoke<AnalysisResult>(
+  'analyze-code',
+  {
+    body: { code: input },
+  }
+);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Edge function error response:", errorText);
-        throw new Error(`Edge function request failed with status ${response.status}: ${response.statusText}`);
-      }
+console.log("Edge function invoke completed. Error:", error);
 
-      // Parse response text separately for better error handling
-      const responseText = await response.text();
-      console.log("Raw edge function response:", responseText);
+if (error) {
+  console.error("Edge function error:", error);
+  throw new Error(`Edge function request failed: ${error.message}`);
+}
 
-      let data: AnalysisResult;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse JSON response:", parseError);
-        throw new Error("Invalid JSON response from webhook");
-      }
+const data: AnalysisResult = invokeData as AnalysisResult;
 
       // Validate response structure
       if (!data.decision || !data.summary || !data.findings) {
